@@ -6,9 +6,9 @@
 
 //Declaracao dos parametros de conexao do aplicativo
 //Alterar os codigos abaixo de acordo com o que foi gerado na plataforma
-#define BLYNK_TEMPLATE_ID "TMPLVmhKPll6"
-#define BLYNK_TEMPLATE_NAME "RoboCore Projeto Arduino Avançado"
-#define BLYNK_AUTH_TOKEN "ixhLmYtSltb6wsRe3WRpOdjrfY-SQI4J"
+#define BLYNK_TEMPLATE_ID "SEU_ID"
+#define BLYNK_TEMPLATE_NAME "SEU_NOME"
+#define BLYNK_AUTH_TOKEN "SEU_TOKEN"
 
 //Definicao do monitoramento de conexao da placa pela serial
 #define BLYNK_PRINT Serial
@@ -24,8 +24,8 @@ char auth[] = BLYNK_AUTH_TOKEN;
 
 //Declaracao do nome e senha da rede Wi-Fi
 //Altere as variaveis abaixo com o nome e senha da sua rede Wi-Fi
-char ssid[] = "Eu amo muito tudo isso";
-char pass[] = "kapolove124";
+char ssid[] = "NOME_ETHERNET";
+char pass[] = "SENHA_ETHERNET";
 
 //Criacao do objeto serial para comunicacao com o ESP8266
 SoftwareSerial EspSerial(10, 11); // RX, TX
