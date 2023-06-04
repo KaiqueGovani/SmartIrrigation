@@ -1,14 +1,14 @@
 /*******************************************************************************
-* Kit Avançado para Arduino v4 - Hello Blynk
-* Primeiros Passos com o aplicativo Blynk IoT.
-* (Baseado no exemplo padrao do Blynk)
+* Irrigação Inteligente
+* Irrigação baseada em paineis solares com conectividade com a núvem
+* Utiliza a plataforma Blynk para armazenamento de dados e controle sem fio
 *******************************************************************************/
 
 //Declaracao dos parametros de conexao do aplicativo
 //Alterar os codigos abaixo de acordo com o que foi gerado na plataforma
-#define BLYNK_TEMPLATE_ID "SEUS_DADOS"
-#define BLYNK_DEVICE_NAME "SEUS_DADOS"
-#define BLYNK_AUTH_TOKEN "SEUS_DADOS"
+#define BLYNK_TEMPLATE_ID "TMPLVmhKPll6"
+#define BLYNK_TEMPLATE_NAME "RoboCore Projeto Arduino Avançado"
+#define BLYNK_AUTH_TOKEN "ixhLmYtSltb6wsRe3WRpOdjrfY-SQI4J"
 
 //Definicao do monitoramento de conexao da placa pela serial
 #define BLYNK_PRINT Serial
@@ -24,8 +24,8 @@ char auth[] = BLYNK_AUTH_TOKEN;
 
 //Declaracao do nome e senha da rede Wi-Fi
 //Altere as variaveis abaixo com o nome e senha da sua rede Wi-Fi
-char ssid[] = "SUA_INTERNET"
-char pass[] = "SUA_SENHA";
+char ssid[] = "Eu amo muito tudo isso";
+char pass[] = "kapolove124";
 
 //Criacao do objeto serial para comunicacao com o ESP8266
 SoftwareSerial EspSerial(10, 11); // RX, TX
@@ -33,7 +33,7 @@ SoftwareSerial EspSerial(10, 11); // RX, TX
 //Declaracao da variavel que armazena a velocidade de comunicacao do modulo
 const int ESP8266_BAUD = 9600;
 
-//Confiracao do objeto 'wifi' para usar a serial do ESP8266 para conexao
+//Configuracao do objeto 'wifi' para usar a serial do ESP8266 para conexao
 ESP8266 wifi(&EspSerial);
 
 //Variavel Dia
@@ -42,16 +42,24 @@ long tempo;
 long tz_offset = 2; //offset da TimeZone em São Paulo
 
 //Configurações da bomba d'água
-const float VAZAO = 3.92;
+const float VAZAO = 9.92; // Vazão da bomba, obtida via experimento
+
+//Configurações dos Pinos Virtuais Blynk
+#define LEDVPin V1
+#define RelayVPin V2
+#define UmidityVPin V3
+#define waterUsageVPin 50
+#define lastDayActiveVPin 99
 
 static unsigned long waterTimer = 0;
 int waterFlag = 0;
 
-#define wifiLED 12   //D12
+#define wifiLED 12   //D12 pino para led de conexão com Blynk
 static unsigned long wifiTimer = 0;
 int wifiFlag = 0;
 
-#define MOISTUREPIN A0 
+#define RelayPin 2
+#define MOISTUREPIN A0 //A0 pino sensor de úmidade
 static unsigned long moistureTimer = 0;
 float sensorValue = 0; 
 
@@ -60,8 +68,8 @@ bool AUTO = false;
 
 
 //Apenas para teste de funcionamento:
-//Funcao que le o pino V1 a cada atualizacao de estado
-BLYNK_WRITE(V1){
+//Funcao que le o pino LEDVPin a cada atualizacao de estado
+BLYNK_WRITE(LEDVPin){
   int pinValue = param.asInt(); //Le o valor do pino virtual
   AUTO = pinValue;
   Serial.println("AUTO: " + String(AUTO));
@@ -70,7 +78,7 @@ BLYNK_WRITE(V1){
 
 unsigned long timeIn;
 unsigned long timeOut;
-BLYNK_WRITE(V2){
+BLYNK_WRITE(RelayVPin){ //Funcao que le o pino RelayVPin a cada atualizacao de estado
   int pinValue = param.asInt(); //Le o valor do pino virtual
   if (pinValue == 1){
     waterOn();
@@ -80,7 +88,7 @@ BLYNK_WRITE(V2){
   }
 }
 
-BLYNK_WRITE(InternalPinUTC){
+BLYNK_WRITE(InternalPinUTC){ //Função que recebe os comandos do aplicativo
   String cmd = param[0].asStr();
   if (cmd == "time"){
     tempo = param[1].asLongLong();
@@ -90,33 +98,33 @@ BLYNK_WRITE(InternalPinUTC){
   }
 }
 
-BLYNK_WRITE(InternalPinMETA){
+BLYNK_WRITE(InternalPinMETA){ //Função que recebe os comandos do aplicativo
   String cmd = param[0].asStr();
-  if (cmd == "Dia"){
+  if (cmd == "Dia"){ //Se o comando for para alterar o dia, muda o valor do pino que armazena o ultimo dia de operação
     String value = param[1].asStr();
     Serial.println(value);
-    Blynk.virtualWrite(99, value);
+    Blynk.virtualWrite(lastDayActiveVPin, value); //Envia o dia da semana para o aplicativo
   }
-  if (cmd == "TimeSec"){
+  if (cmd == "TimeSec"){ //Se o comando for para alterar o tempo de uso, calcula o volume de água usado apartir da vazão
     int value = param[1].asInt();
     //Serial.println(int(value));
     Serial.println(String(int(timeOut - timeIn)) + " segundos");
-    Blynk.sendInternal("meta", "set", "TimeSec", value + (timeOut - timeIn));
-    Blynk.virtualWrite(50, (int(value) + int(timeOut - timeIn)) * VAZAO);
+    Blynk.sendInternal("meta", "set", "TimeSec", value + (timeOut - timeIn)); //Envia o tempo de uso para o aplicativo
+    Blynk.virtualWrite(waterUsageVPin, (int(value) + int(timeOut - timeIn)) * VAZAO); //Envia o volume de água usado para o aplicativo
   }
 }
 
 BLYNK_CONNECTED() {                  //When device is connected to server...
   Blynk.sendInternal("rtc", "sync"); //request current local time for device
   //Blynk.sendInternal("meta", "get", "Dia");
-  Blynk.syncVirtual(V1);
+  Blynk.syncVirtual(LEDVPin);
 }
 
 BLYNK_WRITE(InternalPinRTC) {   //check the value of InternalPinRTC  
   tempo = param.asLong();      //store time in t variable
 }
 
-String dayofweek(time_t now, int tz_offset) {
+String dayofweek(time_t now, int tz_offset) { //Função que retorna o dia da semana
   // Calculate number of seconds since midnight 1 Jan 1970 local time
   time_t localtime = now + (tz_offset * 60 * 60);
   // Convert to number of days since 1 Jan 1970
@@ -144,42 +152,38 @@ String dayofweek(time_t now, int tz_offset) {
   return d;
 }
 
-void setDay(){
+void setDay(){ //Função que envia o dia da semana para o aplicativo
   Blynk.sendInternal("rtc", "sync");
   delay(50);
   Blynk.sendInternal("meta", "set", "Dia", dayofweek(tempo, 0));
   delay(20);
 }
 
-void waterOn(){
-  if (waterFlag == 0){
-    Blynk.virtualWrite(V2, 1);
-    waterFlag = 1;
-    digitalWrite(2, 1);
-    waterTimer = millis();
-    Blynk.logEvent("molhando");
+void waterOn(){ //Função que liga a bomba d'água
+  if (waterFlag == 0){ //Se o pino for ligado
+    Blynk.virtualWrite(RelayVPin, 1); //Liga o pino virtual
+    waterFlag = 1; //Marca que a bomba está ligada
+    digitalWrite(RelayPin, 1); //Liga o relé
+    waterTimer = millis(); //Marca o tempo de inicio da irrigação
+    Blynk.logEvent("molhando"); //Envia um log para o aplicativo
     timeIn = millis()/1000;
-    Serial.println(timeIn);
-    //Pega o dia da semana que foi acionado o botão
-    setDay();
-    Blynk.sendInternal("meta", "get", "Dia");
-    
+    Serial.println(timeIn); //Pega o tempo em segundos que foi acionado o botão   
+    setDay(); //Pega o dia da semana que foi acionado o botão
+    Blynk.sendInternal("meta", "get", "Dia"); //Envia o dia da semana para o aplicativo
   }
 }
 
-void waterOff(){
-  if (waterFlag == 1){
-    Blynk.virtualWrite(V2, 0);
-    waterFlag = 0;
-    digitalWrite(2, waterFlag);
-    Blynk.virtualWrite(2, waterFlag);
-    Blynk.logEvent("parou");
+void waterOff(){ //Função que desliga a bomba d'água
+  if (waterFlag == 1){ //Se o pino for desligado
+    Blynk.virtualWrite(RelayPin, 0); //Desliga o pino virtual
+    waterFlag = 0; //Marca que a bomba está desligada
+    digitalWrite(RelayPin, waterFlag); // Desliga o relé
+    Blynk.logEvent("parou"); //Envia um log para o aplicativo
     timeOut = millis()/1000;
     delay(20);
     //Serial.println(timeOut);
-    Blynk.sendInternal("meta", "get", "TimeSec");
+    Blynk.sendInternal("meta", "get", "TimeSec"); //Envia o tempo de uso para o aplicativo
     delay(20);
- 
   }
   
 }
@@ -203,17 +207,17 @@ void checkBlynkStatus() { // called every 6 seconds by SimpleTimer
   }
 }
 
-void checkMoisture(){
-  sensorValue = analogRead(MOISTUREPIN);
-  sensorValue = map(sensorValue, 0, 1024, 100, 0);
-  Blynk.virtualWrite(3, sensorValue);
-  Serial.println(String(sensorValue) + "%");
-  if (AUTO && sensorValue < 34){
-    waterOn();
-    
-  } if (AUTO && sensorValue > 34 && waterFlag){
-    waterOff();
-    
+void checkMoisture(){ //Função que verifica a umidade do solo
+  sensorValue = analogRead(MOISTUREPIN); //Lê o valor do sensor
+  sensorValue = map(sensorValue, 0, 1024, 100, 0); //Converte o valor do sensor para porcentagem
+  Blynk.virtualWrite(UmidityVPin, sensorValue); //Envia o valor do sensor para o aplicativo
+  Serial.println(String(sensorValue) + "%"); //Imprime o valor do sensor no monitor serial
+  if (AUTO && sensorValue <= 40){ 
+    //Se o modo automático estiver ligado e a umidade do solo for menor que 40%
+    waterOn(); //Liga a bomba
+  } if (AUTO && sensorValue > 40 && waterFlag){ 
+    //Se o modo automático estiver ligado e a umidade do solo for maior que 40% e a bomba estiver ligada
+    waterOff(); //Desliga a bomba  
   }
 }
 
@@ -226,7 +230,7 @@ void setup(){
   //Configura o pino do LED interno da placa como saida
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(wifiLED, OUTPUT);
-  pinMode(2, OUTPUT);
+  pinMode(RelayPin, OUTPUT);
 
   //Inicializa a comunicacao serial do ESP8266
   EspSerial.begin(ESP8266_BAUD);
