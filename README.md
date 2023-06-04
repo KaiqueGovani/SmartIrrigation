@@ -14,16 +14,16 @@ Este é um projeto de irrigação baseado em painéis solares com conectividade 
 
 Antes de utilizar o projeto, é necessário realizar as seguintes configurações:
 
-1. Alterar os códigos de conexão do aplicativo na seção correspondente do arquivo `IrrigacaoInteligente.ino`.
-2. Definir o nome e a senha da rede Wi-Fi na seção correspondente do arquivo `IrrigacaoInteligente.ino`.
-3. Verificar e ajustar as configurações dos pinos virtuais Blynk no arquivo `IrrigacaoInteligente.ino`, se necessário.
-4. Configurar corretamente os parâmetros da bomba d'água, como a vazão, no arquivo `IrrigacaoInteligente.ino`.
+1. Alterar os códigos de conexão do aplicativo na seção correspondente do arquivo.
+2. Definir o nome e a senha da rede Wi-Fi na seção correspondente.
+3. Verificar e ajustar as configurações dos pinos virtuais Blynk, se necessário.
+4. Configurar corretamente os parâmetros da bomba d'água, como a vazão.
 
-Certifique-se de ter o ambiente de desenvolvimento adequado configurado para programar a placa ESP8266.
+Certifique-se de ter o ambiente de desenvolvimento adequado configurado para programar a placa Arduino UNO.
 
 ## Uso
 
-1. Faça o upload do código `IrrigacaoInteligente.ino` para a placa ESP8266.
+1. Faça o upload do código `SmartIrrigation.ino` para a placa Arduino UNO.
 2. Conecte os sensores e a bomba d'água de acordo com as especificações do projeto.
 3. Alimente o sistema com os painéis solares ou por outra fonte de energia adequada.
 4. Abra o aplicativo Blynk e utilize-o para monitorar a umidade do solo e controlar a irrigação remotamente.
@@ -36,7 +36,7 @@ Contribuições são bem-vindas! Se você quiser melhorar este projeto ou tiver 
 
 Kaique Medeiros Govani - kaique.govani@hotmail.com
 
-
+## Mais
 Mais informações: https://upx.minigrupo.repl.co/
 ___
 <sup>Note: This README file was written with the assistance of an AI language model. While efforts have been made to ensure the accuracy and clarity of the information provided, please review and modify the content as necessary to fit your specific project requirements and circumstances.</sup>
